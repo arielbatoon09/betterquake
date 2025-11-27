@@ -43,6 +43,7 @@ export async function GET(req: Request) {
 
     const $ = cheerio.load(html);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const getTdText = (td: any) => {
       const parts: string[] = [];
       $(td)

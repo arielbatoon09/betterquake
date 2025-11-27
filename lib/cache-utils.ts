@@ -61,9 +61,9 @@ export function getCacheAge(key: string): number | null {
     const cached = localStorage.getItem(key);
     if (!cached) return null;
 
-    const parsedCache: CachedData<any> = JSON.parse(cached);
+    const parsedCache: CachedData<unknown> = JSON.parse(cached);
     return Date.now() - parsedCache.timestamp;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

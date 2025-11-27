@@ -45,7 +45,15 @@ export async function GET(req: Request) {
     const $ = cheerio.load(html);
     const rows = $("table tr");
 
-    const earthquakes: any[] = [];
+    const earthquakes: Array<{
+      date: string;
+      magnitude: number;
+      latitude: number;
+      longitude: number;
+      depth: string;
+      location: string;
+      detailsUrl: string | null;
+    }> = [];
 
     rows.each((i, row) => {
       const columns = $(row).find("td");

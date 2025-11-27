@@ -47,6 +47,7 @@ export function EarthquakeDetailsDialog({
     if (open && earthquake.detailsUrl) {
       fetchDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, earthquake.detailsUrl]);
 
   const fetchDetails = async () => {
@@ -236,6 +237,7 @@ export function EarthquakeDetailsDialog({
                     <Map className="h-5 w-5 text-muted-foreground" />
                     <h3 className="text-lg font-semibold">Epicenter Map</h3>
                   </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={details.mapImage}
                     alt="Earthquake epicenter map"
