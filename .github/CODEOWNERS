@@ -1,0 +1,27 @@
+# This file defines code owners for the repository
+# Code owners are automatically requested for review when someone opens a pull request
+
+# Global owners (will be requested for all PRs unless overridden)
+* @yourusername
+
+# API routes
+/app/api/ @yourusername
+
+# Components
+/components/ @yourusername
+
+# Utilities and libraries
+/lib/ @yourusername
+
+# Documentation
+*.md @yourusername
+/docs/ @yourusername
+
+# Configuration files
+*.json @yourusername
+*.yml @yourusername
+*.yaml @yourusername
+
+# GitHub specific
+/.github/ @yourusername
+
