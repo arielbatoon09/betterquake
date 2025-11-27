@@ -1,10 +1,19 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { EarthquakeList } from "@/components/earthquake-list";
 import { EarthquakeFilters, FilterOptions } from "@/components/earthquake-filters";
 import { Pagination } from "@/components/pagination";
@@ -17,7 +26,18 @@ import {
   getCacheAge,
   CACHE_DURATION,
 } from "@/lib/cache-utils";
-import { Activity, AlertTriangle, TrendingUp, RefreshCw, Database, Calendar } from "lucide-react";
+import { Activity, AlertTriangle, TrendingUp, RefreshCw, Database, Calendar, MapPin, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
+
+// Dynamically import map components (client-side only)
+const EarthquakeMap = dynamic(
+  () => import("@/components/earthquake-map").then((mod) => mod.EarthquakeMap),
+  { ssr: false }
+);
+
+const EarthquakeMapMobile = dynamic(
+  () => import("@/components/earthquake-map-mobile").then((mod) => mod.EarthquakeMapMobile),
+  { ssr: false }
+);
 
 export default function Home() {
   const [earthquakes, setEarthquakes] = useState<Earthquake[]>([]);
@@ -35,6 +55,15 @@ export default function Home() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  
+  // Map state
+  const [selectedEarthquake, setSelectedEarthquake] = useState<Earthquake | null>(null);
+  const [showMobileMap, setShowMobileMap] = useState(false);
+  const [useUserLocation, setUseUserLocation] = useState(false);
+  
+  // UI state
+  const [showStats, setShowStats] = useState(true);
+  const [showFiltersSheet, setShowFiltersSheet] = useState(false);
 
   const fetchEarthquakes = async (forceRefresh: boolean = false) => {
     setLoading(true);
@@ -160,76 +189,90 @@ export default function Home() {
     }).length,
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
-          {/* Top Row - Logo and Cache Indicator (Desktop) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
-                <Activity className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  BetterQuake
-                </span>
-              </h1>
-              <p className="text-sm sm:text-base text-muted-foreground mt-2">
-                Real-time earthquake monitoring powered by PHIVOLCS
-              </p>
-            </div>
-            
-            {/* Cache Indicator - Desktop Only */}
-            {isFromCache && (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-                <Database className="h-4 w-4" />
-                <span>Cached</span>
-              </div>
-            )}
-          </div>
+  // Handle earthquake selection
+  const handleEarthquakeSelect = (earthquake: Earthquake) => {
+    setSelectedEarthquake(earthquake);
+    setUseUserLocation(false); // Reset user location when selecting earthquake
+    
+    // On mobile, show full-screen map
+    if (window.innerWidth < 1024) {
+      setShowMobileMap(true);
+    }
+  };
 
-          {/* Bottom Row - Status Info and Actions */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-            {/* Left Side - Status Info */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              {lastUpdated && (
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Last updated: {lastUpdated.toLocaleTimeString()}
-                  {isFromCache && " (from cache)"}
-                </p>
-              )}
-              
-              {isFromCache && (
-                <div className="flex sm:hidden items-center gap-1.5 text-xs text-muted-foreground">
-                  <Database className="h-3.5 w-3.5" />
-                  <span>Cached</span>
-                </div>
-              )}
+  // Handle use my location
+  const handleUseMyLocation = () => {
+    setUseUserLocation(true);
+    setSelectedEarthquake(null);
+  };
+
+  return (
+    <>
+      {/* Mobile Full-Screen Map */}
+      {showMobileMap && selectedEarthquake && (
+        <EarthquakeMapMobile
+          earthquake={selectedEarthquake}
+          onBack={() => setShowMobileMap(false)}
+        />
+      )}
+
+      <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900">
+        <div className="container mx-auto px-4 py-4 max-w-[1920px] h-full flex flex-col">
+        {/* Compact Header */}
+        <div className="mb-2 flex-shrink-0">
+          <div className="flex items-center justify-between gap-4">
+            {/* Left: Logo and Title */}
+            <div className="flex items-center gap-2">
+              <Activity className="h-6 w-6 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  BetterQuake
+                </h1>
+                {lastUpdated && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Updated: {lastUpdated.toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
             </div>
-            
-            {/* Right Side - Month Badge and Refresh Button */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-2">
               {dataPeriod && (
                 <Badge 
                   variant={dataPeriod.isCurrentMonth ? "default" : "secondary"}
-                  className="gap-1.5 sm:gap-2 px-2.5 py-1 sm:px-3 text-xs sm:text-sm w-full sm:w-auto"
+                  className="gap-1 px-2 py-0.5 text-xs hidden sm:flex"
                 >
-                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                  <span>
-                    {dataPeriod.monthYear}
-                    {dataPeriod.isCurrentMonth && " (Current)"}
-                  </span>
+                  <Calendar className="h-3 w-3" />
+                  {dataPeriod.monthYear.split(' ')[0]}
                 </Badge>
               )}
               
+              {isFromCache && (
+                <Badge variant="outline" className="gap-1 px-2 py-0.5 text-xs hidden sm:flex">
+                  <Database className="h-3 w-3" />
+                  Cached
+                </Badge>
+              )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowStats(!showStats)}
+                className="gap-1 h-7 px-2"
+              >
+                {showStats ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                <span className="text-xs hidden sm:inline">Stats</span>
+              </Button>
+
               <Button
                 onClick={() => fetchEarthquakes(true)}
                 disabled={loading}
-                size="default"
-                className="gap-2 w-full sm:w-auto"
+                size="sm"
+                className="gap-1 h-7 px-2"
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                <span>Refresh</span>
+                <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+                <span className="text-xs hidden sm:inline">Refresh</span>
               </Button>
             </div>
           </div>
@@ -243,132 +286,197 @@ export default function Home() {
           </Alert>
         )}
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 text-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium opacity-90">
-                Total Earthquakes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold">{stats.total}</span>
-                <span className="text-sm opacity-75">events</span>
+        {/* Statistics Cards - Collapsible */}
+        {showStats && (
+          <div className="grid grid-cols-3 gap-2 mb-2 flex-shrink-0">
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 text-white p-3">
+              <div className="text-center">
+                <p className="text-base font-medium opacity-90 mb-1">Total</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-            </CardContent>
-          </Card>
+            </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500 to-red-600 border-0 text-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                Magnitude ≥ 5.0
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold">{stats.major}</span>
-                <span className="text-sm opacity-75">significant</span>
+            <Card className="bg-gradient-to-br from-orange-500 to-red-600 border-0 text-white p-3">
+              <div className="text-center">
+                <p className="text-base font-medium opacity-90 mb-1 flex items-center justify-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  M ≥ 5.0
+                </p>
+                <p className="text-2xl font-bold">{stats.major}</p>
               </div>
-            </CardContent>
-          </Card>
+            </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-0 text-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Last 24 Hours
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold">{stats.recent24h}</span>
-                <span className="text-sm opacity-75">recent</span>
+            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-0 text-white p-3">
+              <div className="text-center">
+                <p className="text-base font-medium opacity-90 mb-1 flex items-center justify-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  24h
+                </p>
+                <p className="text-2xl font-bold">{stats.recent24h}</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters */}
-        {earthquakes.length > 0 && !loading && (
-          <EarthquakeFilters
-            filters={filters}
-            onFiltersApply={setFilters}
-            totalCount={earthquakes.length}
-            filteredCount={filteredEarthquakes.length}
-          />
+            </Card>
+          </div>
         )}
 
-        {/* Main Content */}
-        <Card className="shadow-xl">
-          <CardHeader className="border-b">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl">Recent Earthquakes</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Click on any earthquake to view detailed information
-                </p>
+        {/* Main Content - Side by Side Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 flex-1 min-h-0 overflow-hidden">
+          {/* Left Side - Earthquake List */}
+          <Card className="shadow-xl lg:col-span-2 flex flex-col overflow-hidden">
+            <CardHeader className="border-b flex-shrink-0 py-3 px-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-lg">Recent Earthquakes</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Click to view on map
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {filteredEarthquakes.length > 0 && (
+                    <Badge variant="secondary" className="text-sm px-3 py-1">
+                      {filteredEarthquakes.length}
+                      {filteredEarthquakes.length !== earthquakes.length && (
+                        <span className="text-[10px] ml-1 opacity-70">
+                          /{earthquakes.length}
+                        </span>
+                      )}
+                    </Badge>
+                  )}
+                  
+                  {/* Filters Sheet */}
+                  {earthquakes.length > 0 && !loading && (
+                    <Sheet open={showFiltersSheet} onOpenChange={setShowFiltersSheet}>
+                      <SheetTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 h-8 px-3"
+                        >
+                          <SlidersHorizontal className="h-3.5 w-3.5" />
+                          <span className="text-xs hidden sm:inline">Filters</span>
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto">
+                        <SheetHeader>
+                          <SheetTitle>Filter Earthquakes</SheetTitle>
+                          <SheetDescription>
+                            Refine the list by location, magnitude, or sort order
+                          </SheetDescription>
+                        </SheetHeader>
+                        <div className="mt-6">
+                          <EarthquakeFilters
+                            filters={filters}
+                            onFiltersApply={(newFilters) => {
+                              setFilters(newFilters);
+                              setShowFiltersSheet(false);
+                            }}
+                            totalCount={earthquakes.length}
+                            filteredCount={filteredEarthquakes.length}
+                          />
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  )}
+                </div>
               </div>
-              {filteredEarthquakes.length > 0 && (
-                <Badge variant="secondary" className="text-base px-4 py-2">
-                  {filteredEarthquakes.length}{" "}
-                  {filteredEarthquakes.length === 1 ? "Event" : "Events"}
-                </Badge>
+            </CardHeader>
+            <CardContent className="pt-4 px-4 pb-4 flex-1 overflow-y-auto">
+              {earthquakes.length === 0 && !loading && !error && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No earthquake data available</p>
+                </div>
               )}
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {earthquakes.length === 0 && !loading && !error && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No earthquake data available</p>
-              </div>
-            )}
-            {filteredEarthquakes.length === 0 && earthquakes.length > 0 && !loading && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No earthquakes match your filters</p>
-              </div>
-            )}
-            {(filteredEarthquakes.length > 0 || loading) && (
-              <>
-                <EarthquakeList
-                  earthquakes={paginatedEarthquakes}
-                  isLoading={loading}
-                  showPagination={true}
-                />
-                {!loading && filteredEarthquakes.length > pageSize && (
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    pageSize={pageSize}
-                    totalItems={filteredEarthquakes.length}
-                    onPageChange={setCurrentPage}
-                    onPageSizeChange={setPageSize}
+              {filteredEarthquakes.length === 0 && earthquakes.length > 0 && !loading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No earthquakes match your filters</p>
+                </div>
+              )}
+              {(filteredEarthquakes.length > 0 || loading) && (
+                <>
+                  <EarthquakeList
+                    earthquakes={paginatedEarthquakes}
+                    isLoading={loading}
+                    showPagination={true}
+                    onEarthquakeSelect={handleEarthquakeSelect}
+                    selectedEarthquake={selectedEarthquake}
                   />
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+                  {!loading && filteredEarthquakes.length > pageSize && (
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={filteredEarthquakes.length}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={setPageSize}
+                    />
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Footer */}
-        <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>
-            Data provided by{" "}
-            <a
-              href="https://earthquake.phivolcs.dost.gov.ph"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium hover:underline"
-            >
-              PHIVOLCS
-            </a>{" "}
-            (Philippine Institute of Volcanology and Seismology)
-          </p>
+          {/* Right Side - Map (Desktop only) */}
+          <div className="hidden lg:block lg:col-span-3 overflow-hidden">
+            <Card className="shadow-xl h-full flex flex-col">
+              <CardHeader className="border-b flex-shrink-0 py-3 px-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Earthquake Map</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedEarthquake
+                        ? "Selected location"
+                        : useUserLocation
+                        ? "Your location"
+                        : "Current page"}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUseMyLocation}
+                    className="gap-1.5 h-8 px-3"
+                  >
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span className="text-xs">My Location</span>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className=" flex-1 overflow-hidden">
+                {(filteredEarthquakes.length > 0 || loading) && !error && (
+                  <div className="h-full w-full">
+                    {loading ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center text-muted-foreground">
+                          <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                          <p>Loading map...</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <EarthquakeMap
+                        earthquakes={paginatedEarthquakes}
+                        selectedEarthquake={selectedEarthquake}
+                        onMarkerClick={setSelectedEarthquake}
+                        requestUserLocation={useUserLocation}
+                      />
+                    )}
+                  </div>
+                )}
+                {earthquakes.length === 0 && !loading && !error && (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    <div className="text-center">
+                      <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No earthquake data to display</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

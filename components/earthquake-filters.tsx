@@ -3,7 +3,6 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -15,7 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 export interface FilterOptions {
   search: string;
@@ -94,16 +93,13 @@ export function EarthquakeFilters({
   };
 
   return (
-    <Card className="mb-4">
-      <CardContent className="pt-6">
+    <div>
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-              <h3 className="font-semibold">Filters</h3>
               {filteredCount !== totalCount && (
                 <Badge variant="secondary">
-                  {filteredCount} of {totalCount}
+                  {filteredCount} of {totalCount} results
                 </Badge>
               )}
             </div>
@@ -115,15 +111,17 @@ export function EarthquakeFilters({
                 className="h-8 gap-2"
               >
                 <X className="h-3 w-3" />
-                Clear
+                Clear All
               </Button>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="space-y-6 p-4">
             {/* Search */}
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="search">Search Location</Label>
+            <div className="space-y-2">
+              <Label htmlFor="search" className="text-sm font-semibold">
+                Search Location
+              </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -135,11 +133,16 @@ export function EarthquakeFilters({
                   className="pl-9"
                 />
               </div>
+              <p className="text-xs text-muted-foreground">
+                Filter earthquakes by location name
+              </p>
             </div>
 
             {/* Min Magnitude */}
             <div className="space-y-2">
-              <Label htmlFor="magnitude">Min Magnitude</Label>
+              <Label htmlFor="magnitude" className="text-sm font-semibold">
+                Minimum Magnitude
+              </Label>
               <Select
                 value={tempMinMagnitude}
                 onValueChange={setTempMinMagnitude}
@@ -148,7 +151,7 @@ export function EarthquakeFilters({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">All (0+)</SelectItem>
+                  <SelectItem value="0">All Magnitudes (0+)</SelectItem>
                   <SelectItem value="2">2.0+</SelectItem>
                   <SelectItem value="3">3.0+ (Minor)</SelectItem>
                   <SelectItem value="4">4.0+ (Light)</SelectItem>
@@ -157,11 +160,16 @@ export function EarthquakeFilters({
                   <SelectItem value="7">7.0+ (Major)</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Show only earthquakes above this magnitude
+              </p>
             </div>
 
             {/* Sort By */}
             <div className="space-y-2">
-              <Label htmlFor="sort">Sort By</Label>
+              <Label htmlFor="sort" className="text-sm font-semibold">
+                Sort By
+              </Label>
               <Select
                 value={`${tempSortBy}-${tempSortOrder}`}
                 onValueChange={(value) => {
@@ -187,25 +195,31 @@ export function EarthquakeFilters({
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Choose how to order the earthquake list
+              </p>
             </div>
 
-            {/* Search Button */}
-            <div className="space-y-2">
-              <Label className="invisible">Action</Label>
+            {/* Apply Button */}
+            <div className="pt-4 space-y-2">
               <Button 
                 onClick={() => handleSearchSubmit()} 
                 className="w-full gap-2"
-                size="default"
+                size="lg"
                 disabled={!hasUnappliedChanges}
               >
                 <Search className="h-4 w-4" />
-                {hasUnappliedChanges ? "Apply Filters" : "No Filters Applied"}
+                {hasUnappliedChanges ? "Apply Filters" : "No Changes to Apply"}
               </Button>
+              {hasUnappliedChanges && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Click to apply your filter changes
+                </p>
+              )}
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
   );
 }
 

@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Earthquake } from "@/lib/types";
 import {
@@ -12,27 +10,27 @@ import {
   getRelativeTime,
 } from "@/lib/earthquake-utils";
 import { MapPin, Layers, Clock } from "lucide-react";
-import { EarthquakeDetailsDialog } from "./earthquake-details-dialog";
 
 interface EarthquakeListProps {
   earthquakes: Earthquake[];
   isLoading?: boolean;
   showPagination?: boolean;
+  onEarthquakeSelect?: (earthquake: Earthquake) => void;
+  selectedEarthquake?: Earthquake | null;
 }
 
 export function EarthquakeList({
   earthquakes,
   isLoading,
   showPagination = false,
+  onEarthquakeSelect,
+  selectedEarthquake,
 }: EarthquakeListProps) {
-  const [selectedEarthquake, setSelectedEarthquake] =
-    useState<Earthquake | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-
   const handleCardClick = (earthquake: Earthquake) => {
-    if (earthquake.detailsUrl) {
-      setSelectedEarthquake(earthquake);
-      setDetailsOpen(true);
+    // Notify parent component about selection (for map)
+    if (onEarthquakeSelect) {
+      onEarthquakeSelect(earthquake);
+      console.log(showPagination);
     }
   };
 
@@ -50,18 +48,16 @@ export function EarthquakeList({
     );
   }
 
-  const containerClass = showPagination 
-    ? "space-y-3" 
-    : "h-[calc(100vh-12rem)]";
-
   const content = (
-    <div className={showPagination ? "space-y-3" : "space-y-3 pr-4"}>
+    <div className="space-y-3">
           {earthquakes.map((earthquake, index) => (
             <Card
               key={`${earthquake.date}-${earthquake.latitude}-${index}`}
-              className={`p-5 transition-all hover:shadow-lg ${
-                earthquake.detailsUrl
-                  ? "cursor-pointer hover:border-primary"
+              className={`p-5 transition-all hover:shadow-lg cursor-pointer hover:border-primary ${
+                selectedEarthquake?.date === earthquake.date &&
+                selectedEarthquake?.latitude === earthquake.latitude &&
+                selectedEarthquake?.longitude === earthquake.longitude
+                  ? "border-primary ring-2 ring-primary/20"
                   : ""
               }`}
               onClick={() => handleCardClick(earthquake)}
@@ -116,24 +112,6 @@ export function EarthquakeList({
         </div>
   );
 
-  return (
-    <>
-      {showPagination ? (
-        content
-      ) : (
-        <ScrollArea className={containerClass}>
-          {content}
-        </ScrollArea>
-      )}
-
-      {selectedEarthquake && (
-        <EarthquakeDetailsDialog
-          earthquake={selectedEarthquake}
-          open={detailsOpen}
-          onOpenChange={setDetailsOpen}
-        />
-      )}
-    </>
-  );
+  return content;
 }
 
