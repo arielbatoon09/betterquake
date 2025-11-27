@@ -165,59 +165,73 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
-                <Activity className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+          {/* Top Row - Logo and Cache Indicator (Desktop) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex-1">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
+                <Activity className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   BetterQuake
                 </span>
               </h1>
-              <p className="text-muted-foreground mt-2">
+              <p className="text-sm sm:text-base text-muted-foreground mt-2">
                 Real-time earthquake monitoring powered by PHIVOLCS
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            
+            {/* Cache Indicator - Desktop Only */}
+            {isFromCache && (
+              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                <Database className="h-4 w-4" />
+                <span>Cached</span>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Row - Status Info and Actions */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            {/* Left Side - Status Info */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {lastUpdated && (
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                  {isFromCache && " (from cache)"}
+                </p>
+              )}
+              
               {isFromCache && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Database className="h-4 w-4" />
+                <div className="flex sm:hidden items-center gap-1.5 text-xs text-muted-foreground">
+                  <Database className="h-3.5 w-3.5" />
                   <span>Cached</span>
                 </div>
               )}
-              <Button
-                onClick={() => fetchEarthquakes(true)}
-                disabled={loading}
-                size="lg"
-                className="gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
             </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-4">
-            {lastUpdated && (
-              <p className="text-sm text-muted-foreground">
-                Last updated: {lastUpdated.toLocaleTimeString()}
-                {isFromCache && " (from cache)"}
-              </p>
-            )}
             
-            {dataPeriod && (
-              <div className="flex items-center gap-2">
+            {/* Right Side - Month Badge and Refresh Button */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              {dataPeriod && (
                 <Badge 
                   variant={dataPeriod.isCurrentMonth ? "default" : "secondary"}
-                  className="gap-2 px-3 py-1"
+                  className="gap-1.5 sm:gap-2 px-2.5 py-1 sm:px-3 text-xs sm:text-sm w-full sm:w-auto"
                 >
-                  <Calendar className="h-3.5 w-3.5" />
+                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   <span>
                     {dataPeriod.monthYear}
                     {dataPeriod.isCurrentMonth && " (Current)"}
                   </span>
                 </Badge>
-              </div>
-            )}
+              )}
+              
+              <Button
+                onClick={() => fetchEarthquakes(true)}
+                disabled={loading}
+                size="default"
+                className="gap-2 w-full sm:w-auto"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                <span>Refresh</span>
+              </Button>
+            </div>
           </div>
         </div>
 
